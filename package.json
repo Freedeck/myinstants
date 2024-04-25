@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@electron/asar": "^3.2.8",
-    "asar-bundle-runner": "^1.6.0"
+    "asar-bundle-runner": "^1.6.0",
+    "cors": "^2.8.5",
+    "cors-anywhere": "^0.4.4"
   }
 }
