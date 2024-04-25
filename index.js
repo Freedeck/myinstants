@@ -2,6 +2,7 @@ const AsarBundleRunner = require('asar-bundle-runner');
 const asar = require('@electron/asar');
 const { cpSync } = require('node:fs');
 const path = require('node:path');
+const { execSync } = require('node:child_process');
 /**
  * * Freedeck Developer Environment
  * Welcome!
@@ -25,7 +26,9 @@ function buildPhase() {
 		console.log('Building!')
 		asar.createPackage(FDE_Settings.BundlePrebuild + ".src",  path.resolve('./plugins/' + FDE_Settings.BundleName)).then(() => {
 			cpSync(path.resolve('./plugins',FDE_Settings.BundleName), path.resolve('./build/' + FDE_Settings.BundleName))
-
+			execSync('npm i',{
+				cwd: path.resolve(FDE_Settings.BundlePrebuild + ".src")
+			})
 			AsarBundleRunner.extract("./plugins/"+FDE_Settings.BundleName).then(bundleName => {
 				AsarBundleRunner.run(bundleName).then(output => {
 					FDE_Settings._abr_run_output = output
