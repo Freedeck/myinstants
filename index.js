@@ -25,15 +25,15 @@ const FDE_Settings = {
 function buildPhase() {
 	return new Promise((resolve, reject) => {
 		console.log('Building!')
+		console.log('Installing dependencies')
+		execSync('npm i',{
+			cwd: path.resolve(FDE_Settings.BundlePrebuild + ".src")
+		})
 		asar.createPackage(FDE_Settings.BundlePrebuild + ".src",  path.resolve('./plugins/' + FDE_Settings.BundleName)).then(() => {
 			console.log('Created ASAR package.')
 			cpSync(path.resolve('./plugins',FDE_Settings.BundleName), path.resolve('./build/' + FDE_Settings.BundleName))
 			console.log('Copied to plugins folder. Build completed.')
 			if(!FDE_Settings.test) {console.log('No tests to do! Finished.'); return;}
-			exec('npm i',{
-				cwd: path.resolve(FDE_Settings.BundlePrebuild + ".src")
-			}, (err, stdo, stde) => {
-				console.log('Installed dependencies for package for testing')
 				AsarBundleRunner.extract("./plugins/"+FDE_Settings.BundleName).then(bundleName => {
 					console.log('Simulated extraction with ABR')
 					AsarBundleRunner.run(bundleName).then(output => {
@@ -43,7 +43,6 @@ function buildPhase() {
 					}).catch(reject)
 	
 				}).catch(reject)
-			})
 		}).catch(console.error)
 	})
 }
