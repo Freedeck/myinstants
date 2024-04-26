@@ -4,7 +4,7 @@ const Plugin = require(path.resolve('./src/classes/Plugin'));
 class MIP extends Plugin {
     constructor() {
         super('MyInstants', 'Freedeck', 'myinstants', false);
-        this.version = '1.0.1';
+        this.version = '1.0.2';
     }
 
     onInitialize () {
@@ -20,11 +20,9 @@ class MIP extends Plugin {
 const express = require('express')
 const cors = require('cors')
 const app = express()
+const cheerio = require('cheerio');
 
 app.use(cors())
-
-const cheerio = require('cheerio');
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 app.get('/*', function (req, res) {
     if(!req.path.includes('https://')) {
     res.send({})    
@@ -36,7 +34,6 @@ app.get('/*', function (req, res) {
     let url = req.path.split('/')
     url.shift()
     url = url.join('/')
-    console.log(url)
 	fetch(url)
     .then(res=>res.text())
     .then(body => {
@@ -64,7 +61,7 @@ app.get('/*', function (req, res) {
 })
 
 app.listen(5575, () => {
-    console.log('MiAPI initialized')
+    console.log('MiAPI:FD initialized')
 })
 
 
@@ -76,7 +73,7 @@ var cors_proxy = require('cors-anywhere');
 cors_proxy.createServer({
     originWhitelist: [], // Allow all origins
 }).listen(port, host, function() {
-    console.log('Running CORS Anywhere on ' + host + ':' + port);
+    console.log('MiAPI:CORS initialized');
 });
 
 module.exports = {
