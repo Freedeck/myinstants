@@ -15,6 +15,12 @@ class MIP extends Plugin {
         return true;
     }
 
+    onStopping() {
+        app.close();
+        corsServer.closeAllConnections();
+        corsServer.close();
+        console.log('MI:FD stopped!')
+    }
 }
 
 const express = require('express')
@@ -70,7 +76,7 @@ var host = process.env.HOST || '0.0.0.0';
 var port = process.env.PORT || 5576;
 
 var cors_proxy = require('cors-anywhere');
-cors_proxy.createServer({
+const corsServer = cors_proxy.createServer({
     originWhitelist: [], // Allow all origins
 }).listen(port, host, function() {
     console.log('MiAPI:CORS initialized');

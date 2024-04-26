@@ -10,6 +10,7 @@ module.exports = class Plugin {
     jsSockHook;
     jsCHook;
     hasInit = false;
+    stopped = false;
 
     constructor(name, author, id, disabled = false) {
         this.name = name;
@@ -23,6 +24,15 @@ module.exports = class Plugin {
             console.log('[DEV ENV] Plugin didn\'t initialize?');
         }
     }
+
+    onStopping() {}
+
+    stop() {
+      onStopping();
+      this.disabled = true;
+      this.stopped = true;
+    }
+  
 
     setJSClientHook(hook) {
         console.log("[DEV ENV] Setting JS Client Hook to " + hook)
