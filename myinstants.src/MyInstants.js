@@ -16,7 +16,7 @@ class MIP extends Plugin {
     }
 
     onStopping() {
-        app.close();
+        expressApp.close();
         corsServer.closeAllConnections();
         corsServer.close();
         console.log('MI:FD stopped!')
@@ -66,7 +66,7 @@ app.get('/*', function (req, res) {
 
 })
 
-app.listen(5575, () => {
+const expressApp = app.listen(5575, () => {
     console.log('MiAPI:FD initialized')
 })
 
