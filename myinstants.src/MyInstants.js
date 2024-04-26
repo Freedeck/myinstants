@@ -4,7 +4,7 @@ const Plugin = require(path.resolve('./src/classes/Plugin'));
 class MIP extends Plugin {
     constructor() {
         super('MyInstants', 'Freedeck', 'myinstants', false);
-        this.version = '1.0.2';
+        this.version = '1.1.0';
     }
 
     onInitialize () {
