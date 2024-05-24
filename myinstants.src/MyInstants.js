@@ -4,7 +4,7 @@ const Plugin = require(path.resolve('./src/classes/Plugin'));
 class MIP extends Plugin {
     constructor() {
         super('MyInstants', 'Freedeck', 'myinstants', false);
-        this.version = '2.0.0';
+        this.version = '2.0.1';
     }
 
     onInitialize() {
@@ -37,6 +37,8 @@ fastify.get('/*', async (req, res) => {
         res.send('invalid url')
         return;
     }
+    res.header('Access-Control-Allow-Origin' ,'*')
+        .header('Content-Type', 'application/json; charset=utf-8')
 
 
     let url = req.url.toString().split('/')
@@ -56,8 +58,6 @@ fastify.get('/*', async (req, res) => {
                 respondeArray = { path, file };
             });
             res
-                .header('Access-Control-Allow-Origin' ,'*')
-                .header('Content-Type', 'application/json; charset=utf-8')
                 .send(respondeArray);
         })
 })
