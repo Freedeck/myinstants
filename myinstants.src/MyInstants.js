@@ -1,7 +1,6 @@
 const path = require("path");
 const Plugin = require(path.resolve("./src/classes/Plugin"));
 const cheerio = require("cheerio");
-const fastify = require("fastify")();
 
 let corsServer, sockIo;
 
@@ -53,8 +52,6 @@ class MIP extends Plugin {
     console.log("Stopping MIPlugin...");
 
     try {
-      await fastify.close(); // Close Fastify server properly
-      console.log("Fastify server stopped.");
 
       // Close CORS proxy connections if possible
       corsServer.closeAllConnections();
