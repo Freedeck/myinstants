@@ -1,91 +1,128 @@
 const path = require("path");
-const Plugin = require(path.resolve('./src/classes/Plugin'));
+const Plugin = require(path.resolve("./src/classes/Plugin"));
+const cheerio = require("cheerio");
+const fastify = require("fastify")();
+
+let corsServer, sockIo;
 
 class MIP extends Plugin {
-    constructor() {
-        super('MyInstants', 'Freedeck', 'myinstants', false);
-        this.version = '2.0.1';
+  constructor() {
+    super("MyInstants", "Freedeck", "myinstants", false);
+    this.version = "3.0.0";
+  }
+
+  setSocket(sio) {
+    sockIo = sio;
+  }
+
+  onInitialize() {
+    console.log("Initialized MIPlugin");
+    this.setJSSocketHook("mi/socket.js");
+    this.registerNewType("MyInstants Sound", "mi.sound", {
+      url: "https://www.myinstants.com/en/instant/vine-boom-sound-70972/",
+    });
+    return true;
+  }
+
+  async onButton(interaction) {
+    if(!sockIo) return;
+    let url = interaction.data.url;
+    if (!url) return;
+	interaction.data = {path: '', file: ''}
+    interaction.type = 'fd.sound'; // convert to sound so freedeck processes it properly
+    const response = await fetch(url);
+    const body = await response.text();
+    const $ = cheerio.load(body);
+
+    const respondeArray = {};
+    $("#instant-page-button-element").each((i, elem) => {
+      const url = $(elem).attr("data-url");
+      const slashes = url.split("/");
+      slashes.pop();
+      const path = "http://localhost:5576/myinstants.com" + slashes.join("/");
+      const file = url.split("/").slice(3).join("/");
+      respondeArray.path = path;
+      respondeArray.file = file;
+    });
+    interaction.data.path = respondeArray.path;
+    interaction.data.file = respondeArray.file;
+    sockIo.emit("K", interaction);
+  }
+
+  async onStopping() {
+    console.log("Stopping MIPlugin...");
+
+    try {
+      await fastify.close(); // Close Fastify server properly
+      console.log("Fastify server stopped.");
+
+      // Close CORS proxy connections if possible
+      corsServer.closeAllConnections();
+      await new Promise((resolve, reject) => {
+        corsServer.close((err) => (err ? reject(err) : resolve()));
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      console.log("CORS proxy server stopped.");
+    } catch (err) {
+      console.error("Error stopping servers:", err);
     }
 
-    onInitialize() {
-        console.log('Initialized MIPlugin')
-        this.setJSServerHook("mi/server.js");
-        this.registerNewType('MyInstants Sound', 'mi.sound', { url: 'https://www.myinstants.com/en/instant/vine-boom-sound-70972/' });
-        return true;
-    }
-
-    onStopping() {
-       fastify.close();
-        corsServer.closeAllConnections();
-        corsServer.close();
-        console.log('MI:FD stopped!')
-    }
+    console.log("MI:FD stopped!");
+  }
 }
 
-const cheerio = require('cheerio');
-// const turbo = require('turbo-http')
+const net = require("net");
 
-const fastify = require('fastify')();
-// Declare a route
-fastify.get('/*', async (req, res) => {
+function isPortInUse(port, host = "0.0.0.0") {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
 
-    if (!req.url) {
-        res.send('invalid url')
-        return;
-    }
-    if (!req.url.includes('https://')) {
-        res.send('invalid url')
-        return;
-    }
-    res.header('Access-Control-Allow-Origin' ,'*')
-        .header('Content-Type', 'application/json; charset=utf-8')
+    server.once("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        resolve(true);  // Port is in use
+      } else {
+        reject(err);    // Other error
+      }
+    });
 
+    server.once("listening", () => {
+      server.close();  // Close the server immediately
+      resolve(false);  // Port is free
+    });
 
-    let url = req.url.toString().split('/')
-    url.shift()
-    url = url.join('/')
-    return fetch(url)
-        .then(res => res.text())
-        .then(body => {
-            $ = cheerio.load(body);
-            var respondeArray = {}
-            $('#instant-page-button-element').each(function (i, elem) {
-                const url = $(this).attr('data-url');
-                const slashes = url.split('/')
-                slashes.pop()
-                const path = "http://localhost:5576/myinstants.com" + slashes.join('/');
-                const file = url.split('/').slice(3).join('/');
-                respondeArray = { path, file };
-            });
-            res
-                .send(respondeArray);
-        })
-})
+    server.listen(port, host);
+  });
+}
 
+// Start servers
 const start = async () => {
-    try {
-        await fastify.listen({ port: 5575 });
-        console.log('MiAPI2:FD initialized')
-    } catch (err) {
-      fastify.log.error(err)
-      process.exit(1)
+  try {
+    if(!await isPortInUse(5576)) {
+        const host = process.env.HOST || "0.0.0.0";
+        const port = process.env.PORT || 5576;
+
+        const cors_proxy = require("cors-anywhere");
+        corsServer = cors_proxy.createServer({
+        originWhitelist: [], // Allow all origins
+        }).listen(port, host, () => {
+        console.log("MiAPI:CORS initialized");
+        });
+    } else {
+        // dispose of our unused server
+        delete corsServer;
     }
+
+    console.log("MiAPI2:FD initialized");
+  } catch (err) {
+    console.error("Error starting servers:", err);
   }
+};
 
 start();
 
-var host = process.env.HOST || '0.0.0.0';
-// Listen on a specific port via the PORT environment variable
-var port = process.env.PORT || 5576;
-
-var cors_proxy = require('cors-anywhere');
-const corsServer = cors_proxy.createServer({
-    originWhitelist: [], // Allow all origins
-}).listen(port, host, function () {
-    console.log('MiAPI:CORS initialized');
-});
-
 module.exports = {
-    exec: () => new MIP(),
-    class: MIP
-}
+  exec: () => new MIP(),
+  class: MIP,
+};
